@@ -1,0 +1,37 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  packages/search-tools:
+    optionalDependencies:
+      '@netease/wave-search-tools-darwin-arm64':
+        specifier: workspace:*
+        version: link:../search-tools-darwin-arm64
+      '@netease/wave-search-tools-darwin-x64':
+        specifier: workspace:*
+        version: link:../search-tools-darwin-x64
+      '@netease/wave-search-tools-linux-arm64':
+        specifier: workspace:*
+        version: link:../search-tools-linux-arm64
+      '@netease/wave-search-tools-linux-x64':
+        specifier: workspace:*
+        version: link:../search-tools-linux-x64
+      '@netease/wave-search-tools-win32-x64':
+        specifier: workspace:*
+        version: link:../search-tools-win32-x64
+
+  packages/search-tools-darwin-arm64: {}
+
+  packages/search-tools-darwin-x64: {}
+
+  packages/search-tools-linux-arm64: {}
+
+  packages/search-tools-linux-x64: {}
+
+  packages/search-tools-win32-x64: {}

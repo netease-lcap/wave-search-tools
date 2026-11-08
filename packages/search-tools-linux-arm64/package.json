@@ -3,7 +3,17 @@
   "version": "0.1.0",
   "description": "ugrep + bfs binaries for linux-arm64 (statically linked)",
   "license": "BSD-3-Clause",
-  "os": ["linux"],
-  "cpu": ["arm64"],
-  "files": ["bin/"]
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "bin/"
+  ],
+  "bin": {
+    "bfs": "bin/bfs",
+    "ugrep": "bin/ugrep"
+  }
 }

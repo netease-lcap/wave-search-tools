@@ -5,3 +5,6 @@ node_modules/
 # platform packages at publish time and must never land in git history.
 packages/*/bin/*
 !packages/*/bin/.gitkeep
+
+# `gh run download` output, assembled into the platform packages above.
+.artifacts/
