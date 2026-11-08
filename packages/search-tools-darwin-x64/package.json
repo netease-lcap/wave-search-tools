@@ -1,5 +1,5 @@
 {
-  "name": "@netease/wave-search-tools-darwin-x64",
+  "name": "wave-search-tools-darwin-x64",
   "version": "0.1.0",
   "description": "ugrep + bfs binaries for darwin-x64",
   "license": "BSD-3-Clause",

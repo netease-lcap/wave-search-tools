@@ -10,19 +10,19 @@ importers:
 
   packages/search-tools:
     optionalDependencies:
-      '@netease/wave-search-tools-darwin-arm64':
+      wave-search-tools-darwin-arm64:
         specifier: workspace:*
         version: link:../search-tools-darwin-arm64
-      '@netease/wave-search-tools-darwin-x64':
+      wave-search-tools-darwin-x64:
         specifier: workspace:*
         version: link:../search-tools-darwin-x64
-      '@netease/wave-search-tools-linux-arm64':
+      wave-search-tools-linux-arm64:
         specifier: workspace:*
         version: link:../search-tools-linux-arm64
-      '@netease/wave-search-tools-linux-x64':
+      wave-search-tools-linux-x64:
         specifier: workspace:*
         version: link:../search-tools-linux-x64
-      '@netease/wave-search-tools-win32-x64':
+      wave-search-tools-win32-x64:
         specifier: workspace:*
         version: link:../search-tools-win32-x64
 

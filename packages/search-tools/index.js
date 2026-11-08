@@ -10,11 +10,11 @@ const path = require("path");
  * the Bash tool falls back to the system grep/find and nothing else breaks.
  */
 const PLATFORM_PACKAGE = {
-  "darwin-arm64": "@netease/wave-search-tools-darwin-arm64",
-  "darwin-x64": "@netease/wave-search-tools-darwin-x64",
-  "linux-arm64": "@netease/wave-search-tools-linux-arm64",
-  "linux-x64": "@netease/wave-search-tools-linux-x64",
-  "win32-x64": "@netease/wave-search-tools-win32-x64",
+  "darwin-arm64": "wave-search-tools-darwin-arm64",
+  "darwin-x64": "wave-search-tools-darwin-x64",
+  "linux-arm64": "wave-search-tools-linux-arm64",
+  "linux-x64": "wave-search-tools-linux-x64",
+  "win32-x64": "wave-search-tools-win32-x64",
 };
 
 /**

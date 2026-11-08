@@ -15,12 +15,12 @@ ugrep / bfs 的预编译二进制，供 [wave-agent](https://github.com/netease-
 
 | 包 | 内容 |
 | --- | --- |
-| `@netease/wave-search-tools` | 解析逻辑 + `optionalDependencies` |
-| `@netease/wave-search-tools-darwin-arm64` | ugrep + bfs |
-| `@netease/wave-search-tools-darwin-x64` | ugrep + bfs |
-| `@netease/wave-search-tools-linux-x64` | ugrep + bfs |
-| `@netease/wave-search-tools-linux-arm64` | ugrep + bfs |
-| `@netease/wave-search-tools-win32-x64` | **仅 ugrep**（git bash 的 GNU find 已完整，不注入 bfs） |
+| `wave-search-tools` | 解析逻辑 + `optionalDependencies` |
+| `wave-search-tools-darwin-arm64` | ugrep + bfs |
+| `wave-search-tools-darwin-x64` | ugrep + bfs |
+| `wave-search-tools-linux-x64` | ugrep + bfs |
+| `wave-search-tools-linux-arm64` | ugrep + bfs |
+| `wave-search-tools-win32-x64` | **仅 ugrep**（git bash 的 GNU find 已完整，不注入 bfs） |
 
 ## 上游版本
 

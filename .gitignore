@@ -8,3 +8,6 @@ packages/*/bin/*
 
 # `gh run download` output, assembled into the platform packages above.
 .artifacts/
+
+# Never commit credentials
+.npmrc
