@@ -12,5 +12,12 @@
     "sha256": "d3ec82e864e94488029b2e1911a96556e8f4e877dba5d6949fdf38a4bb2b4499",
     "license": "BSD-0-Clause",
     "$comment": "`bfs --version` prints \"bfs 4.1\" (upstream truncates the patch level); the tarball is 4.1.1."
+  },
+  "oniguruma": {
+    "version": "6.9.10",
+    "url": "https://github.com/kkos/oniguruma/releases/download/v6.9.10/onig-6.9.10.tar.gz",
+    "sha256": "2a5cfc5ae259e4e97f86b68dfffc152cdaffe94e2060b770cb827238d769fc05",
+    "license": "BSD-2-Clause",
+    "$comment": "bfs's regex engine for -regex. Linked as a static libonig.a, so bfs keeps working on machines with no libonig installed."
   }
 }

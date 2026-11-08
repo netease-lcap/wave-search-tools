@@ -26,6 +26,8 @@ ugrep / bfs 的预编译二进制，供 [wave-agent](https://github.com/netease-
 
 见 [`vendor.lock.json`](./vendor.lock.json)：来源、版本、sha256 全部固定，构建脚本只认这份 lock。
 
+bfs 额外静态链接了 **oniguruma**（同样由 lock 固定）。原因：bfs 自带的正则方言只有 POSIX，而 GNU `find` 的 `-regex` 默认是 emacs flavour（`\|` 表示或），不补这一层的话 `find . -regex '.*\.\(js\|ts\)'` 会静默返回空结果。静态链接是为了不要求目标机器上装 `libonig`。wave-agent 侧因此会给 `find` 注入 `-regextype findutils-default`，**0.1.0 的二进制没有这份能力，注入会让 `find` 直接报 "Unsupported regex type"**——两边版本要一起升。
+
 ## 构建
 
 ```sh
@@ -34,7 +36,7 @@ ugrep / bfs 的预编译二进制，供 [wave-agent](https://github.com/netease-
 
 产物落在 `packages/search-tools-<target>/bin/`。CI（`.github/workflows/build.yml`）在 push 时跑全部五个目标并各自上传 artifact。
 
-三条踩过的坑写在 `scripts/build.sh` 注释里：CPU 基线要钉死（否则老 CPU SIGILL）、bfs 的 `LDFLAGS` 必须给 `configure` 而非 `make`、macOS 不能传 `--enable-static`。
+几条踩过的坑写在 `scripts/build.sh` 注释里：CPU 基线要钉死（否则老 CPU SIGILL）、bfs 的 `LDFLAGS` 必须给 `configure` 而非 `make`、macOS 不能传 `--enable-static`、bfs 的 configure 找不到依赖时只是静默降级（所以构建脚本断言 `BFS_WITH_ONIGURUMA`）。
 
 ## 发布
 

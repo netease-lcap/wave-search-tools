@@ -176,6 +176,50 @@ build_ugrep() {
 }
 
 # ---------------------------------------------------------------------------
+# 3b. Build oniguruma (static). bfs's `-regex` engine.
+#
+# bfs without Oniguruma only speaks the POSIX regex flavours, while GNU find's
+# `-regex` defaults to the *emacs* flavour (`\|` is alternation). That mismatch
+# is silent — the pattern simply matches nothing — so the binary we ship has to
+# carry Oniguruma. It is compiled as a static `libonig.a` rather than taken from
+# the distro: the binary must work on a machine that has no libonig at all.
+# ---------------------------------------------------------------------------
+ONIG_PREFIX=""
+
+build_oniguruma() {
+  local src="$1"
+  ONIG_PREFIX="$CACHE/oniguruma-$TARGET"
+  if [ -f "$ONIG_PREFIX/lib/libonig.a" ]; then
+    echo "  oniguruma: cached"
+    return
+  fi
+
+  local cross_host="" arch_flags="" jobs
+  if [ "$host_os" = "darwin" ]; then
+    # A static third-party library is fine on macOS (unlike `-static` for the
+    # system libs): it is linked into an otherwise dynamic binary.
+    arch_flags="$MACOS_ARCH"
+    # Same reason as build_ugrep: autoconf links a probe program and runs it,
+    # which cannot execute when the target arch is not the runner's.
+    if [ "$host_arch" != "${TARGET#darwin-}" ] && [ "$host_arch" = "x64" ]; then
+      cross_host="--build=x86_64-apple-darwin --host=aarch64-apple-darwin"
+    fi
+    jobs="$(sysctl -n hw.ncpu)"
+  else
+    jobs="$(nproc)"
+  fi
+
+  ( cd "$src" && ./configure $cross_host --prefix="$ONIG_PREFIX" \
+      --enable-static --disable-shared --disable-dependency-tracking \
+      CFLAGS="$arch_flags" LDFLAGS="$arch_flags" >/dev/null \
+    && make -j"$jobs" >/dev/null 2>&1 \
+    && make install >/dev/null 2>&1 )
+  [ -f "$ONIG_PREFIX/lib/libonig.a" ] \
+    || die "oniguruma produced no static libonig.a in $ONIG_PREFIX/lib"
+  echo "  oniguruma: $(json oniguruma version), static"
+}
+
+# ---------------------------------------------------------------------------
 # 4. Build bfs. Skipped on Windows: git bash already ships a complete GNU find.
 # ---------------------------------------------------------------------------
 build_bfs() {
@@ -192,12 +236,22 @@ build_bfs() {
     # LDFLAGS must reach `configure`, not `make`: bfs's Makefile picks the
     # linker flags up from the generated config.mk, so `make LDFLAGS=-static`
     # is silently ignored and produces a dynamically linked binary.
-    ( cd "$src" && LDFLAGS="-static" ./configure >/dev/null && make -j"$(nproc)" >/dev/null 2>&1 )
+    ( cd "$src" && PKG_CONFIG_PATH="$ONIG_PREFIX/lib/pkgconfig" \
+        LDFLAGS="-static -L$ONIG_PREFIX/lib" ./configure --with-oniguruma >/dev/null \
+      && make -j"$(nproc)" >/dev/null 2>&1 )
   else
-    # macOS: plain link against libSystem, which every Mac ships.
-    ( cd "$src" && CFLAGS="$MACOS_ARCH" LDFLAGS="$MACOS_ARCH" ./configure >/dev/null \
+    # macOS: plain link against libSystem, which every Mac ships, plus the
+    # static libonig.a built above.
+    ( cd "$src" && PKG_CONFIG_PATH="$ONIG_PREFIX/lib/pkgconfig" \
+        CFLAGS="$MACOS_ARCH" LDFLAGS="$MACOS_ARCH -L$ONIG_PREFIX/lib" \
+        ./configure --with-oniguruma >/dev/null \
       && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
   fi
+  # bfs's configure drops a dependency it cannot link without failing, so a
+  # missing Oniguruma would ship quietly. Assert the generated macro; it exists
+  # after configure, which makes this check valid for a cross build too.
+  grep -q "BFS_WITH_ONIGURUMA true" "$src/gen/config.h" \
+    || die "bfs was configured without Oniguruma — find -regex would only speak POSIX"
   cp "$src/bin/bfs" "$OUT/bfs"
   strip "$OUT/bfs" 2>/dev/null || true
   echo "  bfs: $("$OUT/bfs" --version 2>/dev/null | head -1 || true)"
@@ -208,7 +262,13 @@ echo "==> building $TARGET"
 fetch ugrep;  UGREP_SRC="$SRC_ugrep"
 fetch bfs;    BFS_SRC="$SRC_bfs"
 build_ugrep "$UGREP_SRC"
-build_bfs "$BFS_SRC"
+if [ "$host_os" = "win32" ]; then
+  build_bfs "$BFS_SRC"
+else
+  fetch oniguruma; ONIG_SRC="$SRC_oniguruma"
+  build_oniguruma "$ONIG_SRC"
+  build_bfs "$BFS_SRC"
+fi
 
 # ---------------------------------------------------------------------------
 # 5. Verify what we are about to ship.
@@ -227,6 +287,16 @@ if [ "$host_os" = "darwin" ]; then
   case "$pcre2_dep" in
     *pcre2*) ;;
     *) die "ugrep was built without PCRE2 (-P would not work)" ;;
+  esac
+fi
+if [ "$host_os" != "win32" ] && [ "$HOST" = "$TARGET" ]; then
+  # Oniguruma is what puts `-regextype` on the binary at all. A cross-built
+  # sibling cannot run here ("Bad CPU type"), so this is the only place the
+  # regex flavours are observable; the configure-time macro asserts the rest.
+  regextype_out="$("$OUT/bfs" -regextype help 2>&1 || true)"
+  case "$regextype_out" in
+    *findutils-default*) echo "  bfs: regex flavours present (Oniguruma)" ;;
+    *) die "bfs has no findutils-default regex type — built without Oniguruma" ;;
   esac
 fi
 if [ "$host_os" = "linux" ]; then

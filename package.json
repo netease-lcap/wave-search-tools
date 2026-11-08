@@ -1,6 +1,6 @@
 {
   "name": "wave-search-tools-monorepo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Prebuilt ugrep/bfs binaries for wave's Bash tool",
   "packageManager": "pnpm@11.0.0",
