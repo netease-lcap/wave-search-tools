@@ -1,0 +1,18 @@
+{
+  "name": "@wave/search-tools",
+  "version": "0.1.0",
+  "description": "ugrep and bfs binaries for wave's Bash tool (argv[0] dispatch, same trick as Claude Code)",
+  "license": "BSD-3-Clause",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "optionalDependencies": {
+    "@wave/search-tools-darwin-arm64": "workspace:*",
+    "@wave/search-tools-darwin-x64": "workspace:*",
+    "@wave/search-tools-linux-arm64": "workspace:*",
+    "@wave/search-tools-linux-x64": "workspace:*",
+    "@wave/search-tools-win32-x64": "workspace:*"
+  }
+}

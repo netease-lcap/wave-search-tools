@@ -1,0 +1,14 @@
+{
+  "name": "wave-search-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prebuilt ugrep/bfs binaries for wave's Bash tool",
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "publish:all": "pnpm -r publish --access public --no-git-checks"
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+.build/
+
+# Compiled binaries are build artifacts, not source: they are attached to
+# platform packages at publish time and must never land in git history.
+packages/*/bin/*
+!packages/*/bin/.gitkeep

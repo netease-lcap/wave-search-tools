@@ -1,0 +1,50 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    # One runner per target, never a cross-build: a cross-built glibc binary
+    # picks up the build machine's CPU baseline and traps on older CPUs.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: linux-x64 }
+          - { os: ubuntu-24.04-arm, target: linux-arm64 }
+          - { os: macos-14, target: darwin-arm64 }
+          - { os: macos-13, target: darwin-x64 }
+          - { os: windows-latest, target: win32-x64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: install build deps (linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpcre2-dev zlib1g-dev libbz2-dev libzstd-dev libbrotli-dev
+
+      - name: install build deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pcre2 zstd brotli
+
+      - name: build
+        shell: bash
+        run: bash scripts/build.sh ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: search-tools-${{ matrix.target }}
+          path: packages/search-tools-${{ matrix.target }}/bin/*
+          if-no-files-found: error

@@ -1,0 +1,10 @@
+{
+  "name": "@wave/search-tools-linux-arm64",
+  "version": "0.1.0",
+  "description": "ugrep + bfs binaries for linux-arm64 (glibc, statically linked)",
+  "license": "BSD-3-Clause",
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "libc": ["glibc"],
+  "files": ["bin/"]
+}

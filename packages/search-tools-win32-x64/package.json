@@ -1,0 +1,9 @@
+{
+  "name": "@wave/search-tools-win32-x64",
+  "version": "0.1.0",
+  "description": "ugrep binary for win32-x64 (no bfs: git bash already provides GNU find)",
+  "license": "BSD-3-Clause",
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "files": ["bin/"]
+}

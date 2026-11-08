@@ -1,0 +1,16 @@
+{
+  "$comment": "Pinned upstreams. build.sh downloads these and refuses to build if a sha256 does not match — a silently-changed archive would ship different bytes than what was smoke-tested.",
+  "ugrep": {
+    "version": "7.8.4",
+    "url": "https://github.com/Genivia/ugrep/archive/refs/tags/v7.8.4.tar.gz",
+    "sha256": "b16b3503e80890c78a5c845f8c141f239f3904359f1e41900ca566c86e120172",
+    "license": "BSD-3-Clause"
+  },
+  "bfs": {
+    "version": "4.1.1",
+    "url": "https://github.com/tavianator/bfs/releases/download/4.1.1/bfs-4.1.1.tar.gz",
+    "sha256": "d3ec82e864e94488029b2e1911a96556e8f4e877dba5d6949fdf38a4bb2b4499",
+    "license": "BSD-0-Clause",
+    "$comment": "`bfs --version` prints \"bfs 4.1\" (upstream truncates the patch level); the tarball is 4.1.1."
+  }
+}
