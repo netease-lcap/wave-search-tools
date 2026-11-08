@@ -141,7 +141,15 @@ build_ugrep() {
     # backends (bz2/zstd/brotli) are simply left out — configure skips them
     # when the system has no library, and `-z` on those formats degrades to
     # "not supported" rather than breaking anything.
-    ( cd "$src" && ./configure --with-pcre2 --with-zlib $cpus \
+    # When the runner's own arch differs from the target, autoconf has to be
+    # told so: it otherwise links a test program and tries to run it, which
+    # fails with "cannot run C++ compiled programs".
+    local cross_host=""
+    if [ "$host_arch" != "${TARGET#darwin-}" ] && [ "$host_arch" = "x64" ]; then
+      cross_host="--build=x86_64-apple-darwin --host=aarch64-apple-darwin"
+    fi
+    ( cd "$src" && ./configure $cross_host --with-pcre2 --with-zlib $cpus \
+        CC="${CC:-clang}" CXX="${CXX:-clang++}" \
         CFLAGS="$MACOS_ARCH" CXXFLAGS="$MACOS_ARCH" LDFLAGS="$MACOS_ARCH" >/dev/null \
       && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
   fi
