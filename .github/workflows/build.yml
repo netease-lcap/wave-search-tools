@@ -17,10 +17,11 @@ jobs:
         include:
           - { os: ubuntu-latest, target: linux-x64 }
           - { os: ubuntu-24.04-arm, target: linux-arm64 }
-          # macos-13 was retired (Dec 2025) and arm64 macOS runners are a paid
-          # "-xl" image on private repos, so both darwin targets build on the
-          # standard Intel image and switch arch via the SDK's universal stubs.
-          - { os: macos-15-intel, target: darwin-arm64 }
+          # Each darwin target gets its native runner. arm64 macOS runners are
+          # free for public repos but a paid "-xl" image on private ones, and
+          # crossing from an Intel runner makes autoconf skip the pcre2 probe
+          # (the resulting binary silently lacks -P support).
+          - { os: macos-14, target: darwin-arm64 }
           - { os: macos-15-intel, target: darwin-x64 }
           - { os: windows-latest, target: win32-x64 }
     runs-on: ${{ matrix.os }}
