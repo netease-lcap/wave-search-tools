@@ -1,5 +1,5 @@
 {
-  "name": "@wave/search-tools-linux-x64",
+  "name": "@netease/wave-search-tools-linux-x64",
   "version": "0.1.0",
   "description": "ugrep + bfs binaries for linux-x64 (statically linked)",
   "license": "BSD-3-Clause",

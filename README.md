@@ -1,11 +1,13 @@
 # wave-search-tools
 
-ugrep / bfs 的预编译二进制，供 [wave](https://github.com/netease-lcap/wave-agent) 的 Bash 工具做 `grep` / `find` 注入使用（argv[0] 分派，与 Claude Code 同手法）。
+ugrep / bfs 的预编译二进制，供 [wave-agent](https://github.com/netease-lcap/wave-agent) 的 Bash 工具做 `grep` / `find` 注入使用（argv[0] 分派，与 Claude Code 同手法）。
 
 ## 为什么单独一个仓库
 
 - **变更频率低**：ugrep/bfs 是上游稳定版本，一年可能动一次；放进 wave-agent 会让每次改工具都触发一次应用发版。
-- **发布线解耦**：wave-agent 用 `pnpm -r publish` 递归发布全部非 private 包，新包混进去后漏配一次 trusted publisher 就会让整条发版失败。这里独立 OIDC、独立 tag 触发。
+- **发布线解耦**：wave-agent 用 `pnpm -r publish` 递归发布全部非 private 包，新包混进去后没配 trusted publisher 就会让整条发版失败。
+
+发版频率这么低，没有配 OIDC，发布是本地手动执行（见文末）。
 
 ## 包矩阵
 
@@ -13,12 +15,12 @@ ugrep / bfs 的预编译二进制，供 [wave](https://github.com/netease-lcap/w
 
 | 包 | 内容 |
 | --- | --- |
-| `@wave/search-tools` | 解析逻辑 + `optionalDependencies` |
-| `@wave/search-tools-darwin-arm64` | ugrep + bfs |
-| `@wave/search-tools-darwin-x64` | ugrep + bfs |
-| `@wave/search-tools-linux-x64` | ugrep + bfs |
-| `@wave/search-tools-linux-arm64` | ugrep + bfs |
-| `@wave/search-tools-win32-x64` | **仅 ugrep**（git bash 的 GNU find 已完整，不注入 bfs） |
+| `@netease/wave-search-tools` | 解析逻辑 + `optionalDependencies` |
+| `@netease/wave-search-tools-darwin-arm64` | ugrep + bfs |
+| `@netease/wave-search-tools-darwin-x64` | ugrep + bfs |
+| `@netease/wave-search-tools-linux-x64` | ugrep + bfs |
+| `@netease/wave-search-tools-linux-arm64` | ugrep + bfs |
+| `@netease/wave-search-tools-win32-x64` | **仅 ugrep**（git bash 的 GNU find 已完整，不注入 bfs） |
 
 ## 上游版本
 
@@ -30,4 +32,16 @@ ugrep / bfs 的预编译二进制，供 [wave](https://github.com/netease-lcap/w
 ./scripts/build.sh linux-x64      # 当前主机能直接编的目标
 ```
 
-产物落在 `packages/search-tools-<target>/bin/`。
+产物落在 `packages/search-tools-<target>/bin/`。CI（`.github/workflows/build.yml`）在 push 时跑全部五个目标并各自上传 artifact。
+
+三条踩过的坑写在 `scripts/build.sh` 注释里：CPU 基线要钉死（否则老 CPU SIGILL）、bfs 的 `LDFLAGS` 必须给 `configure` 而非 `make`、macOS 不能传 `--enable-static`。
+
+## 发布
+
+```sh
+gh run download <run-id> -D .artifacts   # 拉取五个平台的构建产物
+./scripts/assemble.sh .artifacts         # 复制回各平台包的 bin/
+pnpm -r publish --access public --no-git-checks --otp=<code>
+```
+
+`--otp` 是认证 app 的 6 位 code。`pnpm -r publish` 按依赖顺序发布，平台包先于主包，所以主包的 `optionalDependencies` 能解析到已存在的版本。
