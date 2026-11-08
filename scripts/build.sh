@@ -34,7 +34,26 @@ case "$(uname -m)" in
   *) die "unsupported build arch: $(uname -m)" ;;
 esac
 HOST="$host_os-$host_arch"
-[ "$HOST" = "$TARGET" ] || die "target $TARGET != host $HOST (this script does not cross-compile)"
+if [ "$HOST" != "$TARGET" ]; then
+  # The one allowed cross build is between the two macOS architectures: the
+  # macOS SDK ships universal stubs, so `-arch arm64` on an Intel runner links
+  # against the same system libraries the binary finds at runtime. A cross
+  # glibc build is a different story — it inherits the builder's CPU baseline
+  # and traps on older machines, so those stay refused.
+  case "$host_os:$TARGET" in
+    darwin:darwin-arm64 | darwin:darwin-x64) ;;
+    *) die "target $TARGET != host $HOST (this script does not cross-compile)" ;;
+  esac
+fi
+
+# macOS target arch, independent of the runner's own arch.
+MACOS_ARCH=""
+if [ "$host_os" = "darwin" ]; then
+  case "$TARGET" in
+    darwin-arm64) MACOS_ARCH="-arch arm64" ;;
+    darwin-x64) MACOS_ARCH="-arch x86_64" ;;
+  esac
+fi
 
 OUT="$ROOT/packages/search-tools-$TARGET/bin"
 mkdir -p "$OUT" "$CACHE"
@@ -122,7 +141,8 @@ build_ugrep() {
     # backends (bz2/zstd/brotli) are simply left out — configure skips them
     # when the system has no library, and `-z` on those formats degrades to
     # "not supported" rather than breaking anything.
-    ( cd "$src" && ./configure --with-pcre2 --with-zlib $cpus >/dev/null \
+    ( cd "$src" && ./configure --with-pcre2 --with-zlib $cpus \
+        CFLAGS="$MACOS_ARCH" CXXFLAGS="$MACOS_ARCH" LDFLAGS="$MACOS_ARCH" >/dev/null \
       && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
   fi
   cp "$src/src/ugrep" "$OUT/ugrep"
@@ -150,7 +170,8 @@ build_bfs() {
     ( cd "$src" && LDFLAGS="-static" ./configure >/dev/null && make -j"$(nproc)" >/dev/null 2>&1 )
   else
     # macOS: plain link against libSystem, which every Mac ships.
-    ( cd "$src" && ./configure >/dev/null && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
+    ( cd "$src" && CFLAGS="$MACOS_ARCH" LDFLAGS="$MACOS_ARCH" ./configure >/dev/null \
+      && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
   fi
   cp "$src/bin/bfs" "$OUT/bfs"
   strip "$OUT/bfs" 2>/dev/null || true
