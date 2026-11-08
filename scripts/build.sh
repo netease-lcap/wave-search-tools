@@ -104,8 +104,7 @@ build_ugrep() {
 
   # Pinned CPU baseline: without these, configure enables whatever the build
   # machine supports, and the binary traps on older CPUs.
-  local cpus
-  cpus="$flags --disable-avx2 --disable-avx512"
+  local cpus="--disable-avx2 --disable-avx512"
 
   if [ "$host_os" = "linux" ]; then
     # Fully static: own libc, no dynamic loader, no glibc version floor.
