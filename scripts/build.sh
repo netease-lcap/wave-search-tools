@@ -144,11 +144,22 @@ build_ugrep() {
     # When the runner's own arch differs from the target, autoconf has to be
     # told so: it otherwise links a test program and tries to run it, which
     # fails with "cannot run C++ compiled programs".
-    local cross_host=""
+    local cross_host="" pcre2_arg="--with-pcre2"
     if [ "$host_arch" != "${TARGET#darwin-}" ] && [ "$host_arch" = "x64" ]; then
       cross_host="--build=x86_64-apple-darwin --host=aarch64-apple-darwin"
+      # ugrep picks the pcre2 header AND library from one PCRE2_HOME
+      # (-I$H/include, -L$H/lib). Homebrew's library is built for the runner's
+      # arch, so linking it into an arm64 binary fails and configure silently
+      # disables PCRE2 — the binary then has no -P support. Hand it a home whose
+      # include/ holds Homebrew's header while lib/ stays empty, so the library
+      # still resolves from /usr/lib, where libpcre2-8.tbd is universal.
+      local brew_pcre2
+      brew_pcre2="$(brew --prefix pcre2 2>/dev/null || echo /usr/local/opt/pcre2)"
+      mkdir -p "$CACHE/pcre2-cross/include" "$CACHE/pcre2-cross/lib"
+      cp "$brew_pcre2/include/pcre2.h" "$CACHE/pcre2-cross/include/"
+      pcre2_arg="--with-pcre2=$CACHE/pcre2-cross"
     fi
-    ( cd "$src" && ./configure $cross_host --with-pcre2 --with-zlib $cpus \
+    ( cd "$src" && ./configure $cross_host $pcre2_arg --with-zlib $cpus \
         CC="${CC:-clang}" CXX="${CXX:-clang++}" \
         CFLAGS="$MACOS_ARCH" CXXFLAGS="$MACOS_ARCH" LDFLAGS="$MACOS_ARCH" >/dev/null \
       && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
