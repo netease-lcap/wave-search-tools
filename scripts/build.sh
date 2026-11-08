@@ -170,7 +170,9 @@ build_ugrep() {
   fi
   cp "$src/src/ugrep" "$OUT/ugrep"
   strip "$OUT/ugrep" 2>/dev/null || true
-  echo "  ugrep: $("$OUT/ugrep" --version | head -1)"
+  # A cross-built binary cannot run on this runner ("Bad CPU type"), so the
+  # version line is best-effort; the arch is reported by `file` below.
+  echo "  ugrep: $("$OUT/ugrep" --version 2>/dev/null | head -1 || true)"
 }
 
 # ---------------------------------------------------------------------------
@@ -198,7 +200,7 @@ build_bfs() {
   fi
   cp "$src/bin/bfs" "$OUT/bfs"
   strip "$OUT/bfs" 2>/dev/null || true
-  echo "  bfs: $("$OUT/bfs" --version | head -1)"
+  echo "  bfs: $("$OUT/bfs" --version 2>/dev/null | head -1 || true)"
 }
 
 # ---------------------------------------------------------------------------
@@ -214,13 +216,18 @@ build_bfs "$BFS_SRC"
 echo "==> verification"
 for f in "$OUT"/*; do
   [ -f "$f" ] || continue
-  echo "  $(basename "$f"): $(du -h "$f" | cut -f1)"
+  echo "  $(basename "$f"): $(du -h "$f" | cut -f1)  $(file -b "$f" | cut -c1-52)"
 done
 if [ "$host_os" = "darwin" ]; then
   # configure drops PCRE2 without failing when the probe cannot link, so the
   # binary would silently lose -P. Assert it instead of shipping it quietly.
-  strings "$OUT/ugrep" | grep -qi "pcre2" \
-    || die "ugrep was built without PCRE2 (-P would not work)"
+  # `otool -L` names the actual dylib; piping into `grep -q` would trip
+  # pipefail (grep exits early, otool gets SIGPIPE), so match on captured text.
+  pcre2_dep="$(otool -L "$OUT/ugrep" 2>/dev/null | grep -i "pcre2" || true)"
+  case "$pcre2_dep" in
+    *pcre2*) ;;
+    *) die "ugrep was built without PCRE2 (-P would not work)" ;;
+  esac
 fi
 if [ "$host_os" = "linux" ]; then
   for f in "$OUT"/*; do
