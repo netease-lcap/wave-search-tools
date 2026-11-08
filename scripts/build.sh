@@ -153,10 +153,14 @@ build_ugrep() {
       # disables PCRE2 — the binary then has no -P support. Hand it a home whose
       # include/ holds Homebrew's header while lib/ stays empty, so the library
       # still resolves from /usr/lib, where libpcre2-8.tbd is universal.
-      local brew_pcre2
+      local brew_pcre2 sdk
       brew_pcre2="$(brew --prefix pcre2 2>/dev/null || echo /usr/local/opt/pcre2)"
+      sdk="$(xcrun --show-sdk-path)"
       mkdir -p "$CACHE/pcre2-cross/include" "$CACHE/pcre2-cross/lib"
       cp "$brew_pcre2/include/pcre2.h" "$CACHE/pcre2-cross/include/"
+      # /usr/lib on macOS 11+ is the dyld shared cache — no on-disk .tbd to
+      # link against. The SDK's copy is the universal stub we need.
+      ln -sf "$sdk/usr/lib/libpcre2-8.tbd" "$CACHE/pcre2-cross/lib/"
       pcre2_arg="--with-pcre2=$CACHE/pcre2-cross"
     fi
     ( cd "$src" && ./configure $cross_host $pcre2_arg --with-zlib $cpus \
@@ -212,6 +216,12 @@ for f in "$OUT"/*; do
   [ -f "$f" ] || continue
   echo "  $(basename "$f"): $(du -h "$f" | cut -f1)"
 done
+if [ "$host_os" = "darwin" ]; then
+  # configure drops PCRE2 without failing when the probe cannot link, so the
+  # binary would silently lose -P. Assert it instead of shipping it quietly.
+  strings "$OUT/ugrep" | grep -qi "pcre2" \
+    || die "ugrep was built without PCRE2 (-P would not work)"
+fi
 if [ "$host_os" = "linux" ]; then
   for f in "$OUT"/*; do
     [ -f "$f" ] || continue
