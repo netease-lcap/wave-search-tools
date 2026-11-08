@@ -102,23 +102,28 @@ build_ugrep() {
     return
   fi
 
-  flags="--enable-static --with-pcre2 --with-zlib --with-bzlib --with-zstd --with-brotli"
   # Pinned CPU baseline: without these, configure enables whatever the build
   # machine supports, and the binary traps on older CPUs.
-  flags="$flags --disable-avx2 --disable-avx512"
+  local cpus
+  cpus="$flags --disable-avx2 --disable-avx512"
 
   if [ "$host_os" = "linux" ]; then
-    # Fully static: no dynamic loader, no glibc version floor.
-    ( cd "$src" && ./configure $flags LDFLAGS="-static" >/dev/null && make -j"$(nproc)" >/dev/null )
+    # Fully static: own libc, no dynamic loader, no glibc version floor.
+    ( cd "$src" && ./configure --enable-static --with-pcre2 --with-zlib \
+        --with-bzlib --with-zstd --with-brotli $cpus \
+        LDFLAGS="-static" >/dev/null && make -j"$(nproc)" >/dev/null )
   else
-    # macOS has no static libSystem — `ld -static` is not supported at all, so
-    # the third-party deps (pcre2/zlib/zstd/brotli) are linked statically while
-    # libSystem stays dynamic (present on every macOS). Needs a pcre2 with a
-    # .a alongside the .dylib (Homebrew's does).
-    local prefix
-    prefix="$(brew --prefix 2>/dev/null || echo /opt/homebrew)"
-    ( cd "$src" && ./configure $flags \
-        CPPFLAGS="-I$prefix/include" LDFLAGS="-L$prefix/lib" >/dev/null \
+    # macOS cannot do `-static` at all (no static libSystem, no crt0.o), so
+    # `--enable-static` must NOT be passed here — configure would emit a musl
+    # style static link line and die. And linking Homebrew's .dylib would bake
+    # in paths that only exist on a machine with brew installed.
+    #
+    # So macOS links only what every Mac already has in /usr/lib: libSystem
+    # plus libpcre2-8 (bundled since Big Sur for grep). Optional compression
+    # backends (bz2/zstd/brotli) are simply left out — configure skips them
+    # when the system has no library, and `-z` on those formats degrades to
+    # "not supported" rather than breaking anything.
+    ( cd "$src" && ./configure --with-pcre2 --with-zlib $cpus >/dev/null \
       && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
   fi
   cp "$src/src/ugrep" "$OUT/ugrep"
@@ -145,11 +150,8 @@ build_bfs() {
     # is silently ignored and produces a dynamically linked binary.
     ( cd "$src" && LDFLAGS="-static" ./configure >/dev/null && make -j"$(nproc)" >/dev/null 2>&1 )
   else
-    local prefix
-    prefix="$(brew --prefix 2>/dev/null || echo /opt/homebrew)"
-    ( cd "$src" && ./configure \
-        CPPFLAGS="-I$prefix/include" LDFLAGS="-L$prefix/lib" >/dev/null \
-      && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
+    # macOS: plain link against libSystem, which every Mac ships.
+    ( cd "$src" && ./configure >/dev/null && make -j"$(sysctl -n hw.ncpu)" >/dev/null )
   fi
   cp "$src/bin/bfs" "$OUT/bfs"
   strip "$OUT/bfs" 2>/dev/null || true
