@@ -17,8 +17,10 @@ jobs:
         include:
           - { os: ubuntu-latest, target: linux-x64 }
           - { os: ubuntu-24.04-arm, target: linux-arm64 }
+          # macos-13 was retired (Dec 2025) and macos-14 resolves to a paid
+          # arm64 "-xl" image on private repos; -intel is the standard x64 one.
           - { os: macos-14, target: darwin-arm64 }
-          - { os: macos-13, target: darwin-x64 }
+          - { os: macos-15-intel, target: darwin-x64 }
           - { os: windows-latest, target: win32-x64 }
     runs-on: ${{ matrix.os }}
     steps:
