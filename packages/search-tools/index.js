@@ -1,5 +1,6 @@
 "use strict";
 
+const fs = require("fs");
 const path = require("path");
 
 /**
@@ -30,9 +31,27 @@ function toolsFor(platform) {
   return TOOLS_BY_PLATFORM[platform] ?? ["ugrep", "bfs"];
 }
 
-function packageDir(requireFn, name) {
+/**
+ * Whether [name] is installed somewhere *this* module's require would look.
+ *
+ * Probing an absent package with `require.resolve` is not free: Node remembers
+ * the miss for the rest of the process, so a package that lands on disk later
+ * never resolves in that process. wave hits exactly that shape — it probes, then
+ * downloads, then probes again — and a long-lived daemon that asked once too
+ * early stayed broken for its whole lifetime (the same hazard wave's own
+ * `utils/packageOnDisk.ts` documents). Checking the candidate directories first
+ * keeps the resolver uncontaminated.
+ */
+function isPackageOnDisk(name) {
+  const candidates = require.resolve.paths(name);
+  if (!candidates) return true;
+  return candidates.some((dir) => fs.existsSync(path.join(dir, name)));
+}
+
+function packageDir(name) {
+  if (!isPackageOnDisk(name)) return undefined;
   try {
-    return path.dirname(requireFn.resolve(`${name}/package.json`));
+    return path.dirname(require.resolve(`${name}/package.json`));
   } catch {
     return undefined;
   }
@@ -41,18 +60,24 @@ function packageDir(requireFn, name) {
 /**
  * Resolve the binaries for this process's platform.
  *
- * @param {NodeRequire["resolve"] extends Function ? { resolve(id: string): string } : never} requireFn
- *   A require bound to the *consumer's* location (wave passes
- *   `createRequire(import.meta.url)`), not this package's — the platform
- *   packages are siblings in the consumer's node_modules, not ours.
+ * Resolution starts from *this* file, because the platform packages are this
+ * package's own optionalDependencies: pnpm nests them under
+ * `node_modules/.pnpm/wave-search-tools@<v>/node_modules/`, npm / yarn / hoisted
+ * installs put them next to the consumer — `require` from here walks up and
+ * finds both layouts. Taking a consumer-bound require instead (the 0.2.x API,
+ * `resolveSearchTools(require)`) made the answer depend on the caller's layout
+ * and failed on every pnpm install, wave's own monorepo included.
+ *
+ * The old call shape still works: the argument is simply ignored.
+ *
  * @returns {{ ugrep?: string, bfs?: string } | null} null when this platform
  *   has no installed package; missing individual tools are simply omitted.
  */
-function resolveSearchTools(requireFn) {
+function resolveSearchTools() {
   const name = PLATFORM_PACKAGE[`${process.platform}-${process.arch}`];
   if (!name) return null;
 
-  const dir = packageDir(requireFn, name);
+  const dir = packageDir(name);
   if (!dir) return null;
 
   const suffix = process.platform === "win32" ? ".exe" : "";
