@@ -1,6 +1,6 @@
 {
   "name": "wave-search-tools-monorepo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Prebuilt ugrep/bfs binaries for wave's Bash tool",
   "packageManager": "pnpm@11.0.0",
@@ -9,6 +9,8 @@
   },
   "scripts": {
     "build": "bash scripts/build.sh",
-    "publish:all": "pnpm -r publish --access public --no-git-checks"
+    "test": "node --test \"packages/search-tools/test/*.test.js\"",
+    "publish:all": "pnpm -r publish --access public --no-git-checks",
+    "publish:wrapper": "pnpm --filter wave-search-tools publish --access public --no-git-checks"
   }
 }
